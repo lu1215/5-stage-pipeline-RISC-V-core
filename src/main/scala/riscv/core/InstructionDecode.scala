@@ -145,10 +145,13 @@ class InstructionDecode extends Module {
   val rs1    = io.instruction(19, 15)
   val rs2    = io.instruction(24, 20)
 
+  // There is no need to use the rs1 address if the instruction is "lui."
   io.regs_reg1_read_address := Mux(opcode === Instructions.lui, 0.U(Parameters.PhysicalRegisterAddrWidth), rs1)
   io.regs_reg2_read_address := rs2
   val immediate = MuxLookup(
+    // IndexedSeq uses the opcode as a criterion to choose which value to return.
     opcode,
+    // default value, this value will be returned if the opcode does not match any rule of the IndexedSeq.
     Cat(Fill(20, io.instruction(31)), io.instruction(31, 20)),
     IndexedSeq(
       InstructionTypes.I -> Cat(Fill(21, io.instruction(31)), io.instruction(30, 20)),
@@ -175,6 +178,7 @@ class InstructionDecode extends Module {
     )
   )
   io.ex_immediate := immediate
+  // define first ALU input(if instruction is auipc or jal or B type, first ALU input is the instruction address, else register)
   io.ex_aluop1_source := Mux(
     opcode === Instructions.auipc || opcode === InstructionTypes.B || opcode === Instructions.jal,
     ALUOp1Source.InstructionAddress,
@@ -189,16 +193,20 @@ class InstructionDecode extends Module {
   //                   S-type (rs2 value sent to MemControl, ALU computes rs1 + imm.)
   //                   B-type (rs2 compares with rs1 in jump judge unit, ALU computes jump address PC+imm.)
   io.ex_aluop2_source := Mux(
+    // InstructionTypes.RM => R-type instruction
     opcode === InstructionTypes.RM,
     ALUOp2Source.Register,
     ALUOp2Source.Immediate
   )
 
   // lab3(InstructionDecode) begin
-
+  io.memory_read_enable := opcode === InstructionTypes.L
+  io.memory_write_enable := opcode === InstructionTypes.S
   // lab3(InstructionDecode) end
 
+  // define which result should be wrote back to register
   io.wb_reg_write_source := MuxCase(
+    // default write back source
     RegWriteSource.ALUResult,
     ArraySeq(
       (opcode === InstructionTypes.RM || opcode === InstructionTypes.I ||

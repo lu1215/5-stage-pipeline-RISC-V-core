@@ -35,9 +35,11 @@ class MemoryAccess extends Module {
       0.U,
       IndexedSeq(
         InstructionsTypeL.lb -> MuxLookup(
+          // Which part of the register should be considered the data portion can be determined by mem_address_index
           mem_address_index,
           Cat(Fill(24, data(31)), data(31, 24)),
           IndexedSeq(
+            // Fill() is to do sign extension
             0.U -> Cat(Fill(24, data(7)), data(7, 0)),
             1.U -> Cat(Fill(24, data(15)), data(15, 8)),
             2.U -> Cat(Fill(24, data(23)), data(23, 16))
@@ -70,6 +72,7 @@ class MemoryAccess extends Module {
     io.memory_bundle.write_enable := true.B
     io.memory_bundle.write_strobe := VecInit(Seq.fill(Parameters.WordSize)(false.B))
     when(io.funct3 === InstructionsTypeS.sb) {
+      // mem_address_index simultaneously indicates which part of the register contains the data bits and the position within the memory block where these data bits should be written.
       io.memory_bundle.write_strobe(mem_address_index) := true.B
       io.memory_bundle.write_data := io.reg2_data(Parameters.ByteBits, 0) << (mem_address_index << log2Up(
         Parameters.ByteBits

@@ -20,6 +20,7 @@ class WriteBack extends Module {
     io.alu_result,
     IndexedSeq(
       RegWriteSource.Memory                 -> io.memory_read_data,
+      // just like instruction jal and jalr need to save next instruction ( to ra )
       RegWriteSource.NextInstructionAddress -> (io.instruction_address + 4.U)
     )
   )
