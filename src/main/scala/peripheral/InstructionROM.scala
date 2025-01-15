@@ -49,6 +49,9 @@ class InstructionROM(instructionFilename: String) extends Module {
     instructions = instructions :+ BigInt(0x00000013L)
     instructions = instructions :+ BigInt(0x00000013L)
     val currentDir = System.getProperty("user.dir")
+    // riscv-arch-test
+    // val exeTxtPath = instructionFilename
+    // original test
     val exeTxtPath = Paths.get(currentDir, "verilog", f"${instructionFilename}.txt")
     val writer     = new FileWriter(exeTxtPath.toString)
     for (i <- instructions.indices) {
