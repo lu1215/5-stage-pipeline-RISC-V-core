@@ -95,34 +95,34 @@ object ElfSignatureExtractor {
     //   case endPattern(addr)   => endAddress = BigInt(addr, 16)
     //   case _                  => // 忽略其他行
     // }
-    var beginAddress: BigInt = BigInt("2000", 16) // 0x2000
-    var endAddress: BigInt = BigInt("2FFF", 16)  // 0x2FFF
-    // var beginAddress: BigInt = BigInt(0)
-    // var endAddress: BigInt = BigInt(0)
+    // var beginAddress: BigInt = BigInt("2000", 16) // 0x2000
+    // var endAddress: BigInt = BigInt("2FFF", 16)  // 0x2FFF
+    var beginAddress: BigInt = BigInt(0)
+    var endAddress: BigInt = BigInt(0)
 
-    // output.split("\n").foreach { line =>
-    // if (line.contains("begin_signature")) {
-    //     // 使用 split 分隔字串並提取地址
-    //     val parts = line.trim.split("\\s+")
-    //     if (parts.length > 1) {
-    //     beginAddress = BigInt(parts(1), 16) // 提取第二欄作為地址
-    //     // beginAddress = BigInt("0" + parts(1).substring(1), 16)
-    //     }
-    // } else if (line.contains("end_signature")) {
-    //     // 使用 split 分隔字串並提取地址
-    //     val parts = line.trim.split("\\s+")
-    //     if (parts.length > 1) {
-    //     endAddress = BigInt(parts(1), 16) // 提取第二欄作為地址
-    //     // endAddress = BigInt("0" + parts(1).substring(1), 16)
-    //     }
-    // }
-    // }
+    output.split("\n").foreach { line =>
+    if (line.contains("begin_signature")) {
+        // 使用 split 分隔字串並提取地址
+        val parts = line.trim.split("\\s+")
+        if (parts.length > 1) {
+        // beginAddress = BigInt(parts(1), 16) // 提取第二欄作為地址
+        beginAddress = BigInt("0" + parts(1).substring(1), 16)
+        }
+    } else if (line.contains("end_signature")) {
+        // 使用 split 分隔字串並提取地址
+        val parts = line.trim.split("\\s+")
+        if (parts.length > 1) {
+        // endAddress = BigInt(parts(1), 16) // 提取第二欄作為地址
+        endAddress = BigInt("0" + parts(1).substring(1), 16)
+        }
+    }
+    }
 
-    // if (beginAddress == 0 || endAddress == 0) {
-    //   throw new Exception("Failed to extract begin_signature or end_signature.")
-    // }
-    // println(s"Begin Address: 0x${beginAddress.toString(16)}")
-    // println(s"End Address: 0x${endAddress.toString(16)}")
+    if (beginAddress == 0 || endAddress == 0) {
+      throw new Exception("Failed to extract begin_signature or end_signature.")
+    }
+    println(s"Begin Address: 0x${beginAddress.toString(16)}")
+    println(s"End Address: 0x${endAddress.toString(16)}")
     (beginAddress, endAddress)
   }
 }
@@ -139,40 +139,49 @@ class RiscvArchTest extends AnyFlatSpec with ChiselScalatestTester {
     // 從 ELF 檔案中提取範圍
     val (startAddressInt, endAddressInt) = ElfSignatureExtractor.extractSignatureRange(elfFile)
 
-    val startAddress = (startAddressInt & 0xFFFFFFFFL).U
-    val endAddress = (endAddressInt & 0xFFFFFFFFL).U
+    // val startAddress = (startAddressInt & 0xFFFFFFFFL).U
+    // val endAddress = (endAddressInt & 0xFFFFFFFFL).U
+    val startAddress = startAddressInt
+    val endAddress = endAddressInt
+    val range = endAddressInt - startAddressInt
     // println(s"Signature range: 0x${startAddress.toHexString} to 0x${endAddress.toHexString}")
 
     test(new TestTopModule("test.asmbin")).withAnnotations(TestAnnotations.annos) { dut =>
-      val maxCycles = 50000
-      var cycles = 0
-      var done = false
-
-    //   // 1. 模擬指令執行
-    //   while (!done && cycles < maxCycles) {
-    //     dut.clock.step(1)
-    //     cycles += 1
-    //     done = dut.io.done.peek().litToBoolean // 假設 CPU 提供 done 訊號
-    //   }
-
-    //   if (!done) {
-    //     println(s"Program did not finish within $maxCycles cycles.")
-    //   } else {
-    //     println(s"Program executed in $cycles cycles.")
-    //   }
       
       // 1. 先執行足夠多的 step，確保 CPU 內程式跑完
       dut.clock.setTimeout(0) // 0 表示無限制
-      dut.clock.step(5000)
+      dut.clock.step(50000)
       // 2. 將 .signature 範圍內的記憶體內容寫入 Signature 檔案
       val writer = new java.io.PrintWriter(sigFile)
-      for (addr <- startAddress.litValue.toLong to endAddress.litValue.toLong by 4) {
+    //// write pcvalue
+    //   for (cycle <- 0 until 1024) { // 模擬 100 個時鐘週期
+    //       dut.clock.step(1) // 模擬一個時鐘週期
+    //       val pcValue = dut.io.instruction_address.peek().litValue
+    //       println(s"pcValue: 0x${pcValue.toString(16)}")
+    //       writer.printf("%08x\n", pcValue.toLong)
+    //   }
+    println(s"startAddress: ${startAddress}")
+    println(s"endAddress: ${endAddress}")
+    //   for (addr <- startAddress.litValue.toLong to endAddress.litValue.toLong by 4) {
+      for (addr <- 0L to endAddressInt.toLong by 4L) {
+        // ********************************************************* //
+        // instruction will be store from 0x1000
+        // ex: 80000000:	7d5c0837 => 0x100-0x1004(0d4096 - 0d4100) store 0x7d5c0837
+        // .signature will be store from .start_signature + 0x1000
+        // ********************************************************* //
         // println(s"addr: $addr")
+        // println(s"addr: ${addr/4}")
         // println(s"addr.U: ${addr.U}")
-        dut.io.mem_debug_read_address.poke(addr.U)
+        var r_addr = addr.toLong + 4096L
+        // var r_addr = addr.toLong
+        // println(s"r_addr: ${r_addr}")
+        dut.io.mem_debug_read_address.poke(r_addr.U)
         dut.clock.step()
         val data = dut.io.mem_debug_read_data.peek().litValue
-        writer.printf("%08x\n", data.toLong)
+        if (addr >= startAddressInt && addr < endAddressInt) {
+          writer.printf("%08x\n", data.toLong)
+        }
+        // writer.printf("%08x\n", data.toLong)
       }
       writer.close()
     }

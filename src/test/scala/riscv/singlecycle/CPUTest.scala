@@ -39,7 +39,6 @@ class TestTopModule(exeFilename: String) extends Module {
   CPU_next   := Mux(CPU_clkdiv === 3.U, 0.U, CPU_clkdiv + 1.U)
   CPU_tick   := CPU_clkdiv === 0.U
   CPU_clkdiv := CPU_next
-
   withClock(CPU_tick.asClock) {
     val cpu = Module(new CPU)
     cpu.io.debug_read_address  := 0.U
@@ -58,7 +57,6 @@ class TestTopModule(exeFilename: String) extends Module {
     cpu.io.debug_read_address := io.regs_debug_read_address
     io.regs_debug_read_data   := cpu.io.debug_read_data
   }
-
   mem.io.debug_read_address := io.mem_debug_read_address
   io.mem_debug_read_data    := mem.io.debug_read_data
 }

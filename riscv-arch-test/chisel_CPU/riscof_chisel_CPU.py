@@ -164,14 +164,15 @@ class chisel_CPU(pluginTemplate):
           if self.target_run:
               sbt_cmd = (
                 #   f'sbt "testOnly riscv.riscv_arch_test.RiscvArchTest -- -DelfFile={elf} -DsignatureFile={sig_file}"'
-                  f'sbt -DelfFile={elf} -DsignatureFile={sig_file} "testOnly riscv.riscv_arch_test.RiscvArchTest"'
+                f'sbt -DelfFile={elf} -DsignatureFile={sig_file} "testOnly riscv.riscv_arch_test.RiscvArchTest"'
               )
           else:
               sbt_cmd = 'echo "NO RUN"'
 
           # concatenate all commands that need to be executed within a make-target.
         #   execute = '@cd {0}; {1}; {2};'.format(testentry['work_dir'], cmd, simcmd)
-          execute = '@cd {0}; {1}; cd {2}; riscv32-unknown-elf-objcopy -O binary {3} src/main/resources/test.asmbin ; {4};'.format(testentry['work_dir'], cmd, "/home/cosbi/Documents/5-stage-pipeline-RISC-V-core", elf, sbt_cmd)
+          execute = '@cd {0}; {1}; riscv32-unknown-elf-objcopy -O binary {3} /home/cosbi/Documents/5-stage-pipeline-RISC-V-core/src/main/resources/test.asmbin; cd {2}; {4};'.format(testentry['work_dir'], cmd, "/home/cosbi/Documents/5-stage-pipeline-RISC-V-core", elf, sbt_cmd)
+        #   execute = '@cd {0}; {1}; cd {2}; {4};'.format(testentry['work_dir'], cmd, "/home/cosbi/Documents/5-stage-pipeline-RISC-V-core", elf, sbt_cmd)
 
           # create a target. The makeutil will create a target with the name "TARGET<num>" where num
           # starts from 0 and increments automatically for each new target that is added
