@@ -1,61 +1,3 @@
-// package riscv.riscv_arch_test
-
-// import chisel3._
-// import chiseltest._
-// import org.scalatest.flatspec.AnyFlatSpec
-// import riscv.Parameters
-// import riscv.TestAnnotations
-// import riscv.singlecycle.TestTopModule
-
-// /**
-//   * 這個測試類別示範：
-//   * 1. 透過 System Property elfFile 取得要載入的 ELF 檔案路徑
-//   * 2. 初始化 SingleCycle CPU (TestTopModule) 並執行指定時間的 clock.step
-//   * 3. 讀取記憶體區段 (示範 0x2000 ~ 0x2FFC) 的內容
-//   * 4. 將讀取到的 32-bit 資料轉為十六進位字串輸出到 signatureFile
-//   *
-//   * sbt 執行範例:
-//   *   sbt "testOnly riscv.singlecycle.RiscvArchTest -- -DelfFile=/path/to/my.elf -DsignatureFile=/path/to/result.signature"
-//   */
-// class RiscvArchTest extends AnyFlatSpec with ChiselScalatestTester {
-//   behavior.of("Single Cycle CPU (RISCOF ELF test)")
-
-//   // 從 JVM system property 取得 ELF 路徑 (預設用 "" 之類亦可)
-//   val elfFile: String = sys.props.getOrElse("elfFile", "")
-//   // 從 JVM system property 取得欲輸出的 signature 路徑 (預設 signature.out)
-//   val sigFile: String = sys.props.getOrElse("signatureFile", "signature.out")
-
-//   it should s"load and run '$elfFile' then dump memory to '$sigFile'" in {
-//     test(new TestTopModule(elfFile)).withAnnotations(TestAnnotations.annos) { dut =>
-//       // 1) 先執行足夠多的 step，確保 CPU 內程式跑完
-//       //    根據程式大小可自行抓值 (這裡示範跑 50,000 cycles)
-//       //dut.clock.setTimeout(0) // 0 表示無限制
-//       dut.clock.step(5000)
-
-//       // 2) 開啟檔案，用於寫出 signature
-//       val writer = new java.io.PrintWriter(sigFile)
-
-//       // 3) 讀取記憶體中某一段區域作為 signature
-//       //    (此處只是範例，假設 RISCOF 生成的程式會將結果放在 0x2000~0x2FFC)
-//       //    若測試數量更大，可自行調整迴圈範圍
-//       val startAddress = 0x1000
-//       val endAddress   = 0x1FFC
-//       for (addr <- startAddress to endAddress by 4) {
-//         dut.io.mem_debug_read_address.poke(addr.U)
-//         dut.clock.step() // 等待一拍，以便取得讀取結果
-//         val data = dut.io.mem_debug_read_data.peek().litValue
-//         // 以 8 位十六進位 (32-bit) 格式輸出
-//         // writer.printf("%08x\n", data)
-//         writer.printf("%08x\n", data.toLong) // 轉換為 Long 以符合 %x 的要求
-//       }
-      
-//       // 4) 關閉檔案
-//       writer.close()
-//     }
-//   }
-// }
-
-
 package riscv.riscv_arch_test
 
 import chisel3._
@@ -73,7 +15,7 @@ import scala.util.matching.Regex
   * 2. 初始化 SingleCycle CPU (TestTopModule) 並執行指定時間的 clock.step。
   * 3. 動態讀取記憶體區段的內容並輸出到 signatureFile。
   *
-  * sbt 執行範例:
+  * command example:
   *   sbt "testOnly riscv.singlecycle.RiscvArchTest -- -DelfFile=/path/to/my.elf -DsignatureFile=/path/to/result.signature"
   */
 object ElfSignatureExtractor {
@@ -153,15 +95,8 @@ class RiscvArchTest extends AnyFlatSpec with ChiselScalatestTester {
       dut.clock.step(50000)
       // 2. 將 .signature 範圍內的記憶體內容寫入 Signature 檔案
       val writer = new java.io.PrintWriter(sigFile)
-    //// write pcvalue
-    //   for (cycle <- 0 until 1024) { // 模擬 100 個時鐘週期
-    //       dut.clock.step(1) // 模擬一個時鐘週期
-    //       val pcValue = dut.io.instruction_address.peek().litValue
-    //       println(s"pcValue: 0x${pcValue.toString(16)}")
-    //       writer.printf("%08x\n", pcValue.toLong)
-    //   }
-    println(s"startAddress: ${startAddress}")
-    println(s"endAddress: ${endAddress}")
+    //   println(s"startAddress: ${startAddress}")
+    //   println(s"endAddress: ${endAddress}")
     //   for (addr <- startAddress.litValue.toLong to endAddress.litValue.toLong by 4) {
       for (addr <- 0L to endAddressInt.toLong by 4L) {
         // ********************************************************* //
@@ -181,7 +116,6 @@ class RiscvArchTest extends AnyFlatSpec with ChiselScalatestTester {
         if (addr >= startAddressInt && addr < endAddressInt) {
           writer.printf("%08x\n", data.toLong)
         }
-        // writer.printf("%08x\n", data.toLong)
       }
       writer.close()
     }
