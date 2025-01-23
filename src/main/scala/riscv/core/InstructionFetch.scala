@@ -12,6 +12,7 @@ object ProgramCounter {
 
 class InstructionFetch extends Module {
   val io = IO(new Bundle {
+    // val stall_signal          = Input(Bool())
     val jump_flag_id          = Input(Bool())
     val jump_address_id       = Input(UInt(Parameters.AddrWidth))
     val instruction_read_data = Input(UInt(Parameters.DataWidth))

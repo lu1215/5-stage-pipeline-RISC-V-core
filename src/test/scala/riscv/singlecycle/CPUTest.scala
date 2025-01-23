@@ -25,7 +25,7 @@ class TestTopModule(exeFilename: String) extends Module {
     val mem_debug_read_data     = Output(UInt(Parameters.DataWidth))
   })
 
-  val mem             = Module(new Memory(8192))
+  val mem             = Module(new Memory(450560))
   val instruction_rom = Module(new InstructionROM(exeFilename))
   val rom_loader      = Module(new ROMLoader(instruction_rom.capacity))
 
